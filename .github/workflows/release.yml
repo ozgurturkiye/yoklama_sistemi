@@ -42,7 +42,7 @@ jobs:
 
       - name: Dosyayı Yeniden Adlandır (Windows için PowerShell komutu)
         if: matrix.os == 'windows-latest'
-        run: Rename-Item -Path "target\release\${{ matrix.artifact_name }}" -NewName "${{ matrix.asset_name }}"
+        run: Move-Item -Path "target\release\${{ matrix.artifact_name }}" -Destination ".\${{ matrix.asset_name }}"
 
       - name: GitHub Releases'e Yükle
         uses: softprops/action-gh-release@v2
