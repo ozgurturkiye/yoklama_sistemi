@@ -1,0 +1,52 @@
+name: Yoklama Sistemi Release
+
+# Bu pipeline sadece "v1.0.0" gibi bir etiket (tag) gönderdiğimizde çalışır.
+on:
+  push:
+    tags:
+      - "v*"
+
+# Release (Sürüm) oluşturabilmesi için GitHub botuna yazma izni veriyoruz
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    # 3 farklı işletim sistemi için matris oluşturuyoruz
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: yoklama_sistemi
+            asset_name: yoklama_sistemi-linux-amd64
+          - os: macos-latest
+            artifact_name: yoklama_sistemi
+            asset_name: yoklama_sistemi-macos-intel
+          - os: windows-latest
+            artifact_name: yoklama_sistemi.exe
+            asset_name: yoklama_sistemi-windows.exe
+
+    steps:
+      - name: Kodu İndir (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Release Derlemesi Yap (cargo build --release)
+        run: cargo build --release
+
+      - name: Dosyayı Yeniden Adlandır (Linux ve macOS için)
+        if: matrix.os != 'windows-latest'
+        run: mv target/release/${{ matrix.artifact_name }} ./${{ matrix.asset_name }}
+
+      - name: Dosyayı Yeniden Adlandır (Windows için PowerShell komutu)
+        if: matrix.os == 'windows-latest'
+        run: Rename-Item -Path "target\release\${{ matrix.artifact_name }}" -NewName "${{ matrix.asset_name }}"
+
+      - name: GitHub Releases'e Yükle
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./${{ matrix.asset_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
